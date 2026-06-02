@@ -17,6 +17,7 @@ import {
   Building2,
   Trophy,
 } from "lucide-react";
+import { EXHIBITIONS } from "./exhibitions";
 
 const screens = [
   "splash",
@@ -31,72 +32,82 @@ const screens = [
   "report",
 ];
 
-const halls = [
-  {
-    id: "bronze",
-    title: "常設展｜青銅器廳",
-    time: "約 60 分鐘",
-    crowd: "中",
-    location: "第一展覽館 1F 101",
-    icon: "鼎",
-  },
-  {
-    id: "frontier",
-    title: "特展｜帝國的邊界",
-    time: "約 75 分鐘",
-    crowd: "高",
-    location: "第一展覽館 1F 103-104",
-    icon: "俑",
-  },
-  {
-    id: "east-asia",
-    title: "東亞文物廳",
-    time: "約 45 分鐘",
-    crowd: "低",
-    location: "第一展覽館 1F 105/107",
-    icon: "山",
-  },
-  {
-    id: "modern-art",
-    title: "近代藝術廳",
-    time: "約 50 分鐘",
-    crowd: "中",
-    location: "第一展覽館 1F 106",
-    icon: "杯",
-  },
-];
+const exhibitionIconFallbacks = ["宮", "鼎", "經", "筆", "寶", "獸", "玉", "瓷", "珍", "佛", "書", "畫"];
 
-const featured = [
-  {
-    badge: "本日精選",
-    title: "翠玉白菜",
-    subtitle: "國寶級文物・人氣必看展品",
-    icon: "玉",
-    exhibitionId: "east-asia",
-  },
-  {
-    badge: "推薦展區",
-    title: "青銅器廳",
-    subtitle: "商周禮器・經典常設展",
-    icon: "鼎",
-    exhibitionId: "bronze",
-  },
-  {
-    badge: "熱門特展",
-    title: "帝國的邊界",
-    subtitle: "特展亮點・沉浸式觀看",
-    icon: "卷",
-    exhibitionId: "frontier",
-  },
-];
+function getPublicImagePath(fileName, folder = "exhibitions") {
+  if (!fileName) return "";
+  const name = String(fileName).trim();
+  if (!name) return "";
+  if (name.startsWith("/") || name.startsWith("http://") || name.startsWith("https://")) return name;
+  const hasExtension = /\.[a-z0-9]+$/i.test(name);
+  return `/${folder}/${hasExtension ? name : `${name}.jpg`}`;
+}
 
-const routeStops = [
-  { time: "13:00", title: "青銅器廳", loc: "第一展覽館 1F 101", mins: "18 分鐘", tag: "快速導覽", icon: "鼎" },
-  { time: "13:18", title: "書畫廳", loc: "第一展覽館 1F 103-104", mins: "24 分鐘", tag: "語音導覽", icon: "山" },
-  { time: "13:42", title: "明星文物：翠玉白菜", loc: "第一展覽館 1F 105", mins: "18 分鐘", tag: "重點欣賞", icon: "玉", target: "guide" },
-  { time: "14:00", title: "近代藝術廳", loc: "第一展覽館 1F 106", mins: "15 分鐘", tag: "自由參觀", icon: "杯" },
-  { time: "14:15", title: "行程結束", loc: "可自行延伸探索", mins: "", tag: "完成", icon: "旗" },
-];
+const halls = EXHIBITIONS.map((item, index) => {
+  const tags = Array.isArray(item.tags) ? item.tags : [];
+  const highlights = Array.isArray(item.highlights) && item.highlights.length > 0 ? item.highlights : tags;
+  const duration = Number(item.duration) || 45;
+
+  return {
+    ...item,
+    id: item.id || `exhibition-${index + 1}`,
+    title: item.fullTitle || item.title || item.name || `展覽 ${index + 1}`,
+    shortTitle: item.title || item.fullTitle || item.name || `展覽 ${index + 1}`,
+    time: `約 ${duration} 分鐘`,
+    duration,
+    crowd: item.crowd || "中",
+    location: item.location || `${item.floor || ""} ${Array.isArray(item.rooms) ? item.rooms.join("、") : ""}`.trim(),
+    floor: item.floor || "1F",
+    rooms: Array.isArray(item.rooms) ? item.rooms : [],
+    icon: item.icon || exhibitionIconFallbacks[index % exhibitionIconFallbacks.length],
+    image: getPublicImagePath(item.image),
+    description: item.summary || item.description || "尚未提供展覽簡介。",
+    tags,
+    highlight: highlights.slice(0, 3).map((name) => [name, String(name || item.icon || "展").slice(0, 1)]),
+  };
+});
+
+const featured = halls.slice(0, 6).map((hall, index) => ({
+  badge: index === 0 ? "本日精選" : hall.type || "推薦展覽",
+  title: hall.shortTitle || hall.title,
+  subtitle: `${hall.floor} ${hall.rooms?.join("、") || ""}・${hall.time}`,
+  icon: hall.icon,
+  exhibitionId: hall.id,
+}));
+
+function buildRouteStops(exhibitions, startHour = 13, startMinute = 0, limit = 5) {
+  let totalMinutes = startHour * 60 + startMinute;
+  const selected = exhibitions.slice(0, limit);
+  const stops = selected.map((hall, index) => {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const time = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    totalMinutes += hall.duration || 30;
+    return {
+      time,
+      title: hall.shortTitle || hall.title,
+      loc: hall.location,
+      mins: `${hall.duration || 30} 分鐘`,
+      tag: index === 0 ? "從這裡開始" : hall.tags?.[0] || hall.type || "展覽",
+      icon: hall.icon,
+      target: index === 0 ? "guide" : undefined,
+      exhibitionId: hall.id,
+    };
+  });
+  const endHour = Math.floor(totalMinutes / 60);
+  const endMinute = totalMinutes % 60;
+  stops.push({
+    time: `${String(endHour).padStart(2, "0")}:${String(endMinute).padStart(2, "0")}`,
+    title: "行程結束",
+    loc: "可自行延伸探索",
+    mins: "",
+    tag: "完成",
+    icon: "旗",
+  });
+  return stops;
+}
+
+const routeStops = buildRouteStops(halls);
 
 function cn(...items) {
   return items.filter(Boolean).join(" ");
@@ -138,6 +149,27 @@ function ArtThumb({ label, className }) {
   return (
     <div className={cn("flex items-center justify-center overflow-hidden rounded-2xl border border-[#e7dcc9] bg-gradient-to-br from-[#e9dcc6] via-[#f8f3e8] to-[#c6d5cf] text-2xl font-black text-[#6b5632]", className)}>
       {label}
+    </div>
+  );
+}
+
+function ImageThumb({ src, alt, label, className, imageClassName = "object-cover" }) {
+  if (!src) return <ArtThumb label={label} className={className} />;
+
+  return (
+    <div className={cn("overflow-hidden rounded-2xl border border-[#e7dcc9] bg-[#f8f3e8]", className)}>
+      <img
+        src={src}
+        alt={alt}
+        className={cn("h-full w-full", imageClassName)}
+        onError={(event) => {
+          event.currentTarget.style.display = "none";
+          event.currentTarget.nextElementSibling.style.display = "flex";
+        }}
+      />
+      <div className="hidden h-full w-full items-center justify-center bg-gradient-to-br from-[#e9dcc6] via-[#f8f3e8] to-[#c6d5cf] text-2xl font-black text-[#6b5632]">
+        {label}
+      </div>
     </div>
   );
 }
@@ -248,7 +280,7 @@ function HallsScreen({ go, back, openExhibition }) {
         <div className="space-y-4">
           {halls.map((hall) => (
             <button key={hall.title} onClick={() => openExhibition(hall)} className="flex w-full items-center gap-4 rounded-3xl border border-[#e7dcc9] bg-white p-3 text-left shadow-sm">
-              <ArtThumb label={hall.icon} className="h-20 w-20 shrink-0" />
+              <ImageThumb src={hall.image} alt={hall.title} label={hall.icon} className="h-20 w-20 shrink-0" />
               <div className="flex-1">
                 <h3 className="font-black text-[#123333]">{hall.title}</h3>
                 <p className="mt-1 text-sm text-[#53656a]">{hall.time}</p>
@@ -282,16 +314,22 @@ function ExhibitionScreen({ go, back, addFavorite, favorites, exhibition }) {
     <AppFrame>
       <Header title="展覽介紹" onBack={back} right={<Map size={20} onClick={() => go("map")} />} />
       <main className="px-5 pt-5">
-        <ArtThumb label={exhibitionInfo.icon} className="h-52 w-full bg-gradient-to-br from-[#b7b09b] to-[#5d6b61] text-5xl text-[#f8f3e8]" />
+        <ImageThumb
+          src={exhibitionInfo.image}
+          alt={exhibitionInfo.title}
+          label={exhibitionInfo.icon}
+          className="h-52 w-full rounded-3xl text-5xl"
+          imageClassName="object-cover"
+        />
         <div className="mt-5 rounded-3xl border border-[#e7dcc9] bg-white p-5 shadow-sm">
           <h2 className="text-2xl font-black text-[#123333]">{exhibitionInfo.title}</h2>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-[#f3eadb] px-3 py-1 text-[#8a5d13]">推薦停留：約 60 分鐘</span>
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-600">人流：中</span>
+            <span className="rounded-full bg-[#f3eadb] px-3 py-1 text-[#8a5d13]">推薦停留：{exhibitionInfo.time}</span>
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-600">人流：{exhibitionInfo.crowd}</span>
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-[#064b4a]">展廳位置：{exhibitionInfo.location.replace("第一展覽館 ", "")}</span>
           </div>
           <h3 className="mt-5 font-bold text-[#123333]">展覽簡介</h3>
-          <p className="mt-2 text-sm leading-7 text-[#53656a]">此頁提供展覽重點、建議停留時間、展廳位置與亮點文物。你可以先加入我的最愛，稍後讓 AI 規劃時作為參考。</p>
+          <p className="mt-2 text-sm leading-7 text-[#53656a] whitespace-pre-line">{exhibitionInfo.description}</p>
           <h3 className="mt-5 font-bold text-[#123333]">亮點文物</h3>
           <div className="mt-3 grid grid-cols-3 gap-3">
             {exhibitionInfo.highlight.map(([name, label]) => (
