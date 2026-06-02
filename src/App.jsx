@@ -17,7 +17,7 @@ import {
   Building2,
   Trophy,
 } from "lucide-react";
-import { EXHIBITIONS } from "./exhibitions";
+import { EXHIBITIONS, ARTIFACTS } from "./exhibitions";
 
 const screens = [
   "splash",
