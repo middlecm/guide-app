@@ -45,6 +45,22 @@ function getPublicImagePath(fileName, folder = "exhibitions") {
   return `/${folder}/${hasExtension ? name : `${name}.jpg`}`;
 }
 
+function getArtifactImagePath(fileName) {
+  return getPublicImagePath(fileName, "artifacts");
+}
+
+const artifactCoverByExhibitionId = (Array.isArray(ARTIFACTS) ? ARTIFACTS : [])
+  .slice()
+  .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999))
+  .reduce((acc, item) => {
+    const exhibitionId = item.exhibitionId || item.exhibition || item.parentId || "";
+    const image = item.image || item.imageFile || item.imageName;
+    if (exhibitionId && image && !acc[exhibitionId]) {
+      acc[exhibitionId] = getArtifactImagePath(image);
+    }
+    return acc;
+  }, {});
+
 const halls = EXHIBITIONS.map((item, index) => {
   const tags = Array.isArray(item.tags) ? item.tags : [];
   const highlights = Array.isArray(item.highlights) && item.highlights.length > 0 ? item.highlights : tags;
@@ -62,7 +78,7 @@ const halls = EXHIBITIONS.map((item, index) => {
     floor: item.floor || "1F",
     rooms: Array.isArray(item.rooms) ? item.rooms : [],
     icon: item.icon || exhibitionIconFallbacks[index % exhibitionIconFallbacks.length],
-    image: getPublicImagePath(item.image),
+    image: artifactCoverByExhibitionId[item.id] || getPublicImagePath(item.image),
     description: item.summary || item.description || "尚未提供展覽簡介。",
     tags,
     highlight: highlights.slice(0, 3).map((name) => [name, String(name || item.icon || "展").slice(0, 1)]),
