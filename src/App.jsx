@@ -17,8 +17,7 @@ import {
   Building2,
   Trophy,
 } from "lucide-react";
-import { EXHIBITIONS } from "./exhibitions";
-import { ARTIFACTS } from "./artifacts";
+import { EXHIBITIONS, ARTIFACTS } from "./exhibitions";
 
 const screens = [
   "splash",
@@ -110,13 +109,14 @@ function buildRouteStops(exhibitions, startHour = 13, startMinute = 0, limit = 5
   return stops;
 }
 
+const routeStops = buildRouteStops(halls);
+
 const artifactRecords = (Array.isArray(ARTIFACTS) ? ARTIFACTS : []).map((item, index) => ({
   ...item,
   id: item.id || `artifact-${index + 1}`,
   title: item.title || item.name || item.artifactName || `展品 ${index + 1}`,
   exhibitionId: item.exhibitionId || item.exhibition || item.parentId || "",
   description: item.description || item.summary || "尚未提供展品簡介。",
-  guideText: item.guideText || item.guide || "",
   image: getPublicImagePath(item.image || item.imageFile || item.imageName),
   room: item.room || item.location || "",
   floor: item.floor || "",
@@ -125,13 +125,6 @@ const artifactRecords = (Array.isArray(ARTIFACTS) ? ARTIFACTS : []).map((item, i
   tag: item.tag || item.category || item.room || "重點文物",
   icon: item.icon || String(item.title || item.name || "物").slice(-1),
 }));
-
-const hallsForRoute = halls.filter((hall) =>
-  artifactRecords.some((item) => item.exhibitionId === hall.id)
-);
-const routeStops = buildRouteStops(hallsForRoute.length > 0 ? hallsForRoute : halls);
-const reportArtifacts = artifactRecords.slice(0, 5);
-const recommendedHalls = halls.filter((hall) => hall.id !== "bronze").slice(0, 3);
 
 function cn(...items) {
   return items.filter(Boolean).join(" ");
@@ -534,13 +527,7 @@ function RouteScreen({ go, back }) {
               </div>
               <div className="rounded-3xl border border-[#e7dcc9] bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <ImageThumb
-                    src={stop.image}
-                    alt={stop.title}
-                    label={stop.icon}
-                    className="h-12 w-12 rounded-2xl text-base"
-                    imageClassName="object-cover"
-                  />
+                  <ImageThumb src={stop.image} alt={stop.title} label={stop.icon} className="h-12 w-12 rounded-2xl text-base" imageClassName="object-cover" />
                   <div className="flex-1">
                     <h3 className="font-black text-[#123333]">{stop.title}</h3>
                     <p className="mt-1 text-xs text-[#53656a]"><MapPin size={12} className="inline" /> {stop.loc}</p>
@@ -681,8 +668,8 @@ const guideHalls = halls.map((hall, index) => {
           title: item.title,
           time: item.audioDuration || "03:00",
           tag: item.tag || item.room || hall.tags?.[0] || "重點文物",
-          desc: item.guideText || item.description,
-          icon: item.icon || item.title?.slice(-1) || "物",
+          desc: item.description,
+          icon: item.title?.slice(-1) || "物",
           image: item.image,
         }))
       : [
@@ -787,12 +774,12 @@ function GuideScreen({ go, back }) {
         </div>
 
         <ImageThumb
-          src={currentExhibit.image}
-          alt={currentExhibit.title}
-          label={currentExhibit.icon}
-          className="mt-4 h-56 w-full rounded-3xl text-6xl"
-          imageClassName="object-cover"
-        />
+  src={currentExhibit.image}
+  alt={currentExhibit.title}
+  label={currentExhibit.icon}
+  className="mt-4 h-56 w-full rounded-3xl text-6xl"
+  imageClassName="object-cover"
+/>
         <p className="mt-4 text-sm leading-7 text-[#53656a]">{currentExhibit.desc}</p>
 
         <div className="mt-4 rounded-3xl border border-[#e7dcc9] bg-white p-4 shadow-sm">
@@ -889,7 +876,7 @@ function AdjustScreen({ go, back }) {
         <div className="absolute inset-x-5 top-36 rounded-[32px] border border-[#e7dcc9] bg-[#fffdf8] p-5 shadow-2xl">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-3xl font-black text-amber-600">!</div>
           <h2 className="mt-3 text-center text-xl font-black text-[#123333]">你多停留了一會兒</h2>
-          <p className="mt-3 text-center text-sm leading-6 text-[#53656a]">你在目前展品停留時間比預計多了一些，是否需要調整後續行程？</p>
+          <p className="mt-3 text-center text-sm leading-6 text-[#53656a]">你在「翠玉白菜」停留時間比預計多了 8 分鐘，是否需要調整後續行程？</p>
           <div className="mt-5 space-y-3">
             {options.map(([title, desc], idx) => (
               <button key={title} onClick={() => go(idx === 0 ? "route" : "report")} className={cn("w-full rounded-2xl border p-4 text-left", idx === 0 ? "border-[#064b4a] bg-[#064b4a] text-white" : "border-[#e7dcc9] bg-white text-[#123333]")}> 
@@ -922,7 +909,7 @@ function ReportScreen({ go, back }) {
           <div className="rounded-3xl border border-[#e7dcc9] bg-white p-4 shadow-sm">
             <h3 className="text-sm font-black text-[#123333]">最多瀏覽 TOP 5</h3>
             <div className="mt-3 space-y-2">
-              {reportArtifacts.map((item, i) => <div key={item.id || item.title} className="flex items-center justify-between gap-2 text-xs"><span className="line-clamp-1"><b className="mr-2 text-[#b68a3a]">{i + 1}</b>{item.title}</span><span>{item.audioDuration || "03:00"}</span></div>)}
+              {[["翠玉白菜", "18"], ["毛公鼎", "16"], ["溪山行旅圖", "14"], ["散氏盤", "12"], ["帝國邊界", "10"]].map(([name, mins], i) => <div key={name} className="flex items-center justify-between text-xs"><span><b className="mr-2 text-[#b68a3a]">{i + 1}</b>{name}</span><span>{mins} 分鐘</span></div>)}
             </div>
           </div>
           <div className="rounded-3xl border border-[#e7dcc9] bg-white p-4 text-center shadow-sm">
@@ -942,7 +929,7 @@ function ReportScreen({ go, back }) {
         <div className="mt-4 rounded-3xl border border-[#e7dcc9] bg-white p-4 shadow-sm">
           <h3 className="font-black text-[#123333]">下次推薦給你</h3>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-[#064b4a]">
-            {recommendedHalls.map((x) => <span key={x.id} className="rounded-2xl bg-[#f3eadb] px-2 py-3">{x.shortTitle || x.title}</span>)}
+            {['唐代書畫特展', '瓷器專題展', '佛教藝術廳'].map(x => <span key={x} className="rounded-2xl bg-[#f3eadb] px-2 py-3">{x}</span>)}
           </div>
         </div>
         <button onClick={() => go("home")} className="mt-5 h-14 w-full rounded-2xl bg-[#064b4a] text-base font-black text-white shadow-lg shadow-[#064b4a]/20">加入我的下次行程</button>

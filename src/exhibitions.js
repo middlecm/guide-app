@@ -1,5 +1,4 @@
-// Auto-generated from the user's exhibition table.
-// Images are expected in: public/exhibitions/
+// Auto-generated corrected database. Images are expected in public/exhibitions/.
 
 export const EXHIBITIONS = [
   {
@@ -71,6 +70,24 @@ export const EXHIBITIONS = [
       "書畫"
     ],
     "description": "本院典藏的文物，依據《文化資產保存法》分為「國寶」、「重要古物」和「一般古物」三種。國寶雖然也經常安排於各種展覽中展出，但為了讓來訪者不論何時到院都有機會深入欣賞國寶，故專闢一室推出「國寶聚焦」系列展覽，每季選展一件書畫國寶於此專屬的展間展出。"
+  },
+  {
+    "id": "famous-treasures",
+    "title": "人氣國寶｜翠玉白菜與肉形石",
+    "floor": "3F",
+    "rooms": [
+      "302"
+    ],
+    "location": "第一展覽館 302",
+    "duration": 30,
+    "crowd": "高",
+    "image": "II-01.jpg",
+    "tags": [
+      "國寶",
+      "玉器",
+      "珍玩"
+    ],
+    "description": "以翠玉白菜與肉形石等高人氣文物為核心，讓觀眾從材質、巧雕與宮廷收藏脈絡理解故宮最具辨識度的明星文物。"
   },
   {
     "id": "chu-ci",
