@@ -119,7 +119,7 @@ const artifactRecords = (Array.isArray(ARTIFACTS) ? ARTIFACTS : []).map((item, i
   title: item.title || item.name || item.artifactName || `展品 ${index + 1}`,
   exhibitionId: item.exhibitionId || item.exhibition || item.parentId || "",
   description: item.description || item.summary || "尚未提供展品簡介。",
-  image: getPublicImagePath(item.image || item.imageFile || item.imageName),
+  image: getPublicImagePath(item.image || item.imageFile || item.imageName, "artifacts"),
   room: item.room || item.location || "",
   floor: item.floor || "",
   order: Number(item.order) || index + 1,
