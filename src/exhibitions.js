@@ -1,24 +1,7 @@
 // Auto-generated corrected database. Images are expected in public/exhibitions/.
 
 export const EXHIBITIONS = [
-  {
-    "id": "bronze",
-    "title": "常設展｜青銅器廳",
-    "floor": "1F",
-    "rooms": [
-      "101"
-    ],
-    "location": "第一展覽館 1F 101",
-    "duration": 18,
-    "crowd": "中",
-    "image": "bronze.jpg",
-    "tags": [
-      "青銅器",
-      "歷史",
-      "禮制"
-    ],
-    "description": "本廳精選商周至戰國青銅器……"
-  },
+  
   {
     "id": "dragon-sutra",
     "title": "特展｜《龍藏經》：皇權・信仰・藝術的盛世交響 (I)(II)",
