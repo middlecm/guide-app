@@ -72,6 +72,7 @@ const featured = halls.slice(0, 6).map((hall, index) => ({
   title: hall.shortTitle || hall.title,
   subtitle: `${hall.floor} ${hall.rooms?.join("、") || ""}・${hall.time}`,
   icon: hall.icon,
+  image: hall.image,
   exhibitionId: hall.id,
 }));
 
@@ -108,6 +109,21 @@ function buildRouteStops(exhibitions, startHour = 13, startMinute = 0, limit = 5
 }
 
 const routeStops = buildRouteStops(halls);
+
+const artifactRecords = (Array.isArray(ARTIFACTS) ? ARTIFACTS : []).map((item, index) => ({
+  ...item,
+  id: item.id || `artifact-${index + 1}`,
+  title: item.title || item.name || item.artifactName || `展品 ${index + 1}`,
+  exhibitionId: item.exhibitionId || item.exhibition || item.parentId || "",
+  description: item.description || item.summary || "尚未提供展品簡介。",
+  image: getPublicImagePath(item.image || item.imageFile || item.imageName),
+  room: item.room || item.location || "",
+  floor: item.floor || "",
+  order: Number(item.order) || index + 1,
+  audioDuration: item.audioDuration || item.duration || item.time || "03:00",
+  tag: item.tag || item.category || item.room || "重點文物",
+  icon: item.icon || String(item.title || item.name || "物").slice(-1),
+}));
 
 function cn(...items) {
   return items.filter(Boolean).join(" ");
@@ -249,7 +265,13 @@ function HomeScreen({ go, openExhibition }) {
                   <p className="mt-2 text-xs leading-5 text-white/80">{item.subtitle}</p>
                   <span className="mt-4 inline-flex rounded-full bg-white/15 px-3 py-1 text-xs">立即查看</span>
                 </div>
-                <ArtThumb label={item.icon} className="h-28 bg-gradient-to-br from-[#e6eee6] to-[#8fb7a7] text-[#064b4a]" />
+                <ImageThumb
+                  src={item.image}
+                  alt={item.title}
+                  label={item.icon}
+                  className="h-28 bg-gradient-to-br from-[#e6eee6] to-[#8fb7a7] text-[#064b4a]"
+                  imageClassName="object-cover"
+                />
               </div>
             </button>
           ))}
@@ -304,9 +326,25 @@ function HallsScreen({ go, back, openExhibition }) {
 
 function ExhibitionScreen({ go, back, addFavorite, favorites, exhibition }) {
   const current = exhibition || halls[0];
+  const currentArtifacts = artifactRecords
+    .filter((item) => item.exhibitionId === current.id)
+    .sort((a, b) => (a.order || 999) - (b.order || 999));
+
+  const fallbackHighlights = Array.isArray(current.highlight)
+    ? current.highlight.map(([name, label], index) => ({
+        id: `${current.id}-fallback-${index}`,
+        title: name,
+        icon: label,
+        image: "",
+        description: "",
+      }))
+    : [];
+
+  const highlightArtifacts = currentArtifacts.length > 0 ? currentArtifacts.slice(0, 6) : fallbackHighlights.slice(0, 3);
+
   const exhibitionInfo = {
     ...current,
-    highlight: current.id === "bronze" ? [["毛公鼎", "鼎"], ["散氏盤", "盤"], ["虎簋", "簋"]] : current.id === "frontier" ? [["陶俑", "俑"], ["邊境圖像", "界"], ["異域器物", "器"]] : current.id === "east-asia" ? [["青瓷", "瓷"], ["書卷", "卷"], ["佛像", "佛"]] : [["珍玩", "珍"], ["宮廷器物", "宮"], ["近代畫作", "畫"]],
+    highlightArtifacts,
   };
   const isFavorite = favorites.some((item) => item.id === exhibitionInfo.id);
 
@@ -330,12 +368,19 @@ function ExhibitionScreen({ go, back, addFavorite, favorites, exhibition }) {
           </div>
           <h3 className="mt-5 font-bold text-[#123333]">展覽簡介</h3>
           <p className="mt-2 text-sm leading-7 text-[#53656a] whitespace-pre-line">{exhibitionInfo.description}</p>
+
           <h3 className="mt-5 font-bold text-[#123333]">亮點文物</h3>
           <div className="mt-3 grid grid-cols-3 gap-3">
-            {exhibitionInfo.highlight.map(([name, label]) => (
-              <div key={name}>
-                <ArtThumb label={label} className="h-20" />
-                <p className="mt-1 text-center text-xs text-[#53656a]">{name}</p>
+            {exhibitionInfo.highlightArtifacts.map((item) => (
+              <div key={item.id || item.title}>
+                <ImageThumb
+                  src={item.image}
+                  alt={item.title}
+                  label={item.icon || item.title?.slice(-1) || "物"}
+                  className="h-20"
+                  imageClassName="object-cover"
+                />
+                <p className="mt-1 line-clamp-2 text-center text-xs text-[#53656a]">{item.title}</p>
               </div>
             ))}
           </div>
@@ -607,52 +652,37 @@ function FloorMapScreen({ back }) {
   );
 }
 
-const guideHalls = [
-  {
-    hall: "青銅器廳",
-    location: "第一展覽館 1F 101",
-    nextHall: "書畫廳",
-    intro: "從禮器、銘文到權力象徵，理解青銅器如何承載古代社會秩序。",
-    exhibits: [
-      { title: "毛公鼎", time: "03:20", tag: "銘文重點", desc: "西周晚期重要青銅器，內壁長篇銘文記錄冊命內容，是理解西周政治制度的重要作品。", icon: "鼎" },
-      { title: "散氏盤", time: "02:45", tag: "土地契約", desc: "以銘文記錄土地轉讓與盟誓，像是一份刻在青銅上的古代文件。", icon: "盤" },
-      { title: "宗周鐘", time: "02:15", tag: "聲音與禮樂", desc: "青銅鐘不只是樂器，也是禮制與權力的象徵，反映古代聲音文化。", icon: "鐘" },
-    ],
-  },
-  {
-    hall: "書畫廳",
-    location: "第一展覽館 1F 103-104",
-    nextHall: "明星文物區",
-    intro: "透過筆墨、構圖與觀看距離，進入古人的山水想像與心境。",
-    exhibits: [
-      { title: "溪山行旅圖", time: "04:10", tag: "山水經典", desc: "以高聳主山與細密皴法表現自然的壯闊，觀看時可先遠看氣勢，再近看筆觸。", icon: "山" },
-      { title: "早春圖", time: "03:30", tag: "空間層次", desc: "畫面以雲氣與山勢層層推進，呈現春天甦醒時的山林氣息。", icon: "春" },
-      { title: "快雪時晴帖", time: "02:50", tag: "書法欣賞", desc: "從字形節奏與行氣感受書法中的速度、情緒與留白。", icon: "帖" },
-    ],
-  },
-  {
-    hall: "明星文物區",
-    location: "第一展覽館 1F 105",
-    nextHall: "近代藝術廳",
-    intro: "聚焦故宮人氣作品，用較短時間掌握最容易被記住的文物故事。",
-    exhibits: [
-      { title: "翠玉白菜", time: "03:18", tag: "人氣國寶", desc: "以翠玉天然色澤雕成白菜，葉脈、昆蟲與層次細節讓作品兼具寓意與工藝巧思。", icon: "玉" },
-      { title: "肉形石", time: "02:40", tag: "材質想像", desc: "透過石材天然紋理與染色加工，讓礦物看起來像真實肉塊。", icon: "肉" },
-      { title: "橄欖核舟", time: "03:05", tag: "微雕工藝", desc: "在極小材料上雕刻人物與船艙，展現精密工藝與觀看尺度的驚喜。", icon: "舟" },
-    ],
-  },
-  {
-    hall: "近代藝術廳",
-    location: "第一展覽館 1F 106",
-    nextHall: "行程結束",
-    intro: "用當代視角回看傳統，整理本次觀看經驗與個人偏好。",
-    exhibits: [
-      { title: "院藏珍玩選件", time: "02:30", tag: "材質觀察", desc: "從玉、木、瓷等材質觀察工藝與生活美學的連結。", icon: "珍" },
-      { title: "宮廷日常風景", time: "02:20", tag: "生活想像", desc: "透過器物想像清代宮廷生活中的禮儀、娛樂與日常秩序。", icon: "宮" },
-      { title: "展後回顧", time: "01:30", tag: "整理心得", desc: "回顧今天最有印象的作品，作為下一次參觀推薦的依據。", icon: "記" },
-    ],
-  },
-];
+const guideHalls = halls.map((hall, index) => {
+  const artifacts = artifactRecords
+    .filter((item) => item.exhibitionId === hall.id)
+    .sort((a, b) => (a.order || 999) - (b.order || 999));
+
+  return {
+    hall: hall.shortTitle || hall.title,
+    location: hall.location,
+    nextHall: halls[index + 1]?.shortTitle || "行程結束",
+    intro: hall.description,
+    exhibits: artifacts.length > 0
+      ? artifacts.map((item) => ({
+          title: item.title,
+          time: item.audioDuration || "03:00",
+          tag: item.tag || item.room || hall.tags?.[0] || "重點文物",
+          desc: item.description,
+          icon: item.title?.slice(-1) || "物",
+          image: item.image,
+        }))
+      : [
+          {
+            title: hall.shortTitle || hall.title,
+            time: "03:00",
+            tag: hall.tags?.[0] || "展覽重點",
+            desc: hall.description,
+            icon: hall.icon,
+            image: hall.image,
+          },
+        ],
+  };
+});
 
 function durationToSeconds(duration) {
   const [minutes = "0", seconds = "0"] = duration.split(":");
@@ -742,7 +772,13 @@ function GuideScreen({ go, back }) {
           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-[#064b4a]">{currentExhibit.tag}</span>
         </div>
 
-        <ArtThumb label={currentExhibit.icon} className="mt-4 h-56 w-full bg-gradient-to-br from-[#edf4ee] via-[#d6e5dc] to-[#7aa995] text-6xl text-[#064b4a]" />
+        <ImageThumb
+  src={currentExhibit.image}
+  alt={currentExhibit.title}
+  label={currentExhibit.icon}
+  className="mt-4 h-56 w-full rounded-3xl text-6xl"
+  imageClassName="object-cover"
+/>
         <p className="mt-4 text-sm leading-7 text-[#53656a]">{currentExhibit.desc}</p>
 
         <div className="mt-4 rounded-3xl border border-[#e7dcc9] bg-white p-4 shadow-sm">
@@ -797,7 +833,13 @@ function GuideScreen({ go, back }) {
                   index === exhibitIndex ? "border-[#064b4a] bg-[#064b4a] text-white" : "border-[#e7dcc9] bg-white text-[#123333]"
                 )}
               >
-                <ArtThumb label={item.icon} className={cn("h-12 w-12 shrink-0 rounded-xl text-base", index === exhibitIndex ? "border-white/30 bg-white/15 text-white" : "")} />
+                <ImageThumb
+                  src={item.image}
+                  alt={item.title}
+                  label={item.icon}
+                  className={cn("h-12 w-12 shrink-0 rounded-xl text-base", index === exhibitIndex ? "border-white/30 bg-white/15 text-white" : "")}
+                  imageClassName="object-cover"
+                />
                 <div className="flex-1">
                   <div className="font-black">{index + 1}. {item.title}</div>
                   <div className={cn("mt-1 text-xs", index === exhibitIndex ? "text-white/75" : "text-[#8a7352]")}>{item.tag}｜{item.time}</div>
